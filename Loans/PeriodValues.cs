@@ -50,9 +50,14 @@ namespace Loans
         /// ПРИСВАИВАТЬСЯ ЗНАЧЕНИЮ LOAN.SUMOFLOAN
         /// </summary>
         public static decimal TotalLeftPrincipal { get; set; }
+        /// <summary>
+        /// Плата вперёд.
+        /// Если заёмщик оплачивает больше нужного, то заносим лишние средства сюда.
+        /// </summary>
+        public decimal PaymentInAdvance { get; set; }
 
         /// <summary>
-        /// Fills all initial data
+        /// Fills dates and CurrPrincipalPayment. CurrPercents is not filled
         /// </summary>
         /// <param name="dateBegin">dateEnd - dateBegin may be not equal to
         /// loan.IntervalOfPlannedPayments for short term loans or last period.
@@ -62,20 +67,75 @@ namespace Loans
         public PeriodValues(DateTimeOffset dateBegin, DateTimeOffset dateEnd, Loan loan)
         {
 
-            this.DateBegin = dateBegin;
-            this.DateEnd = dateEnd;
-            this.
-            this.CurrPercents = loan.LoanSum loan.RateOfInterestPerDay * (DateEnd.Date - DateBegin.Date).Days;
-            this.
+            this.DateBegin = dateBegin.Date;
+            this.DateEnd = dateEnd.Date;
+
+            int timeInterval = (DateEnd - DateBegin).Days;
+
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Эта штука будет рассчитываться исходя из loan.realPayments;
+                //important jjjj
+            ////this.CurrPercents = loan.RateOfInterestPerDay * timeInterval * PeriodValues.TotalLeftPrincipal;
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+            int loanTermIndays = (loan.EndDate.Date - loan.StartDate.Date).Days;
+            //important Спрашивать как рассчитывается сумма выплат основного долга в каждый период
+            this.CurrPrincipalPayment = loan.LoanSum * (timeInterval / loanTermIndays);
         }
 
-
         /// <summary>
-        /// Get conditions for all borrowers
+        /// Fills PeriodValues with DateBegin and DateEnd according to currloan.StartDate and currloan.EndDate
         /// </summary>
-        /// <param name="loans"></param>
+        /// <param name="currLoan"></param>
         /// <returns></returns>
-        public static List<PeriodValues> GetAllPeriodsValues(Loan currLoan)
+        private List<PeriodValues> InitPeriodValuesWithDatesAndCurrPrincipalPayment(Loan currLoan)
+        {
+            List<PeriodValues> pvList = new List<PeriodValues>();
+
+            //If it's short term loan then we create only 1 periodValues
+            if (!currLoan.IntervalOfPlannedPayments.HasValue)
+            {//if it's short term loan
+                PeriodValues pv = new PeriodValues(currLoan.StartDate.Date, currLoan.EndDate.Date, currLoan);
+                pvList.Add(pv);
+            }
+            else
+            {
+                DateTimeOffset prevTmp = currLoan.StartDate.Date;
+                var deltaTime = TimeSpan.FromDays(currLoan.IntervalOfPlannedPayments.Value.Days);
+                DateTimeOffset currTmp = currLoan.StartDate.Date + deltaTime;
+
+                while (prevTmp < currLoan.EndDate.Date)
+                {
+                    PeriodValues pv;
+                    if (currTmp < currLoan.EndDate.Date)
+                    {
+                        pv = new PeriodValues(prevTmp, currTmp, currLoan);
+                        pvList.Add(pv);
+                    }
+                    else
+                    {
+                        pv = new PeriodValues(prevTmp, currLoan.EndDate.Date,currLoan);
+                        pvList.Add(pv);
+                    }
+                    prevTmp = currTmp;
+                    currTmp += deltaTime;
+
+                }
+            }
+            return pvList;
+        }
+        private class 
+        /// <summary>
+        /// Initialize and fills data for all periods of loan
+        /// </summary>
+        /// <param name="loans">Current loan</param>
+        /// <returns></returns>
+        public List<PeriodValues> GetAllPeriodsValuesForLoan(Loan currLoan)
         {
             List<PeriodValues> res = new List<PeriodValues>();
 
@@ -88,18 +148,41 @@ namespace Loans
             PeriodValues.PrevPercents = 0;
             PeriodValues.PrevPrincipalPayments = 0;
 
+            List<PeriodValues> pvs = InitPeriodValuesWithDatesAndCurrPrincipalPayment(currLoan);
+            var q = pvs.GroupJoin(currLoan.RealPayments, x => new { x.DateBegin, x.DateEnd }, x => new { DateBegin = x.dateOfPayment, DateEnd =x.dateOfPayment }, (x, y) => new { PeriodValue = x, RealPayments = y },
+                new IEqualityComparer(var x,var y) => y.dateOfPayment > x.DateBegin && y.dateOfPayment <= x.DateEnd);
+
+            //startdate и endDate пока не нужны
             var startDate = currLoan.StartDate.Date;
             DateTimeOffset endDate;
 
+            var q =  currLoan.RealPayments
+
+            //If it's short term loan then we create only 1 periodValues
             if (!currLoan.IntervalOfPlannedPayments.HasValue)
-                //if it's short term loan
+            {//if it's short term loan
+                PeriodValues period = new PeriodValues()
                 endDate = currLoan.EndDate.Date;
+
+
+                Fill this Period with data
+
+                res.Add(jdjdjdjdj);
+            }
+            //Else we iterate with currLoan.IntervalOfPlannedPayments step
+            else
+            {
+                for (var endPerioDate = startDate;endPerioDate<endDate) 
+            
+            //Проверка последнего периода, т.к. он может быть короче currLoan.IntervalOfPlannedPayments
             //Compare date+ interval with enddate of loan
             else if ((startDate.AddDays(currLoan.IntervalOfPlannedPayments.Value.Days)) < currLoan.EndDate)
-                endDate = startDate.AddDays(currLoan.IntervalOfPlannedPayments.Value.Days);
-            else
-                //case of termination of loan
-                endDate = currLoan.EndDate.Date;
+                    endDate = startDate.AddDays(currLoan.IntervalOfPlannedPayments.Value.Days);
+                else
+                    //case of termination of loan
+                    endDate = currLoan.EndDate.Date;
+            }
+
 
             PeriodValues pv = new PeriodValues(startDate, endDate, currLoan);
             

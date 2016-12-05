@@ -49,6 +49,11 @@ namespace Loans
             Loan.AddHandler("дата платежа", new DatesOfPaymentsHandler());
             Loan.AddHandler("сумма платежа", new SumsOfPaymentsHandler());
         }
+        /// <summary>
+        /// Заполняет данные текущего займа в соответствие с indexOfLoan строкой в excelData
+        /// </summary>
+        /// <param name="indexOfLoan">строка в excel файле</param>
+        /// <param name="excelData">Данные excel файла</param>
         public Loan(int indexOfLoan, ExcelData excelData)
         {
             try
@@ -90,6 +95,7 @@ namespace Loans
             }
             catch (Exception e)
             {
+                //important Выдавать выше объявление для его дальнейшей обработки
                 throw e;
             }
         }

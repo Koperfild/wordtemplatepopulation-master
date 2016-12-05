@@ -35,6 +35,9 @@ namespace Loans
             
             var loans = Loan.ParseLoansFromExcelData(excelData);
 
+            //Check excel data for each loan (each row)
+
+
 
             //calculation logic
             DateTimeOffset
