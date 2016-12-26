@@ -18,8 +18,18 @@ namespace Loans
         public string Contract { get; set; }
         public string FIO { get; set; }//May be splitted to 3 parts (first,last names and patronymic)
         public decimal LoanSum { get; set; }
+        /// <summary>
+        /// Остаток основного долга для погашения. Изначально равен LoanSum
+        /// </summary>
+        public decimal TotalLeftPrincipal { get; set; }
         public decimal RateOfInterestPerDay { get; set; }//is calculated based on percents and period
+        /// <summary>
+        /// Кол-во процентов в первоначальном виде (в день/неделю/месяц)
+        /// </summary>
         public decimal InitialInterestRate { get; set; }//TODO may be required to change to private
+        /// <summary>
+        /// Единицы измерения первичного вида процентов
+        /// </summary>
         public PeriodInDays InitialInterestPeriod { get; set; }//TODO may be required to change to private
         public TimeSpan? IntervalOfPlannedPayments { get; set; }
         public DateTimeOffset StartDate { get; set; }
@@ -92,6 +102,7 @@ namespace Loans
                 
                 //Calculate RateOfInterestPerDay
                 this.RateOfInterestPerDay = this.InitialInterestRate / (decimal)this.InitialInterestPeriod;
+                this.TotalLeftPrincipal = this.LoanSum;
             }
             catch (Exception e)
             {
