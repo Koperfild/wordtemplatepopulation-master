@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using WordTemplatePopulation;
 using Loans.StringHandlers;
+using Loans.Exceptions;
 
 namespace Loans
 {
@@ -15,6 +16,7 @@ namespace Loans
     public class Loan
     {
         public static Dictionary<string, IHandler> dict = new Dictionary<string, IHandler>();
+        public int RowIndex { get; set; }
         public string Contract { get; set; }
         public string FIO { get; set; }//May be splitted to 3 parts (first,last names and patronymic)
         public decimal LoanSum { get; set; }
@@ -25,19 +27,23 @@ namespace Loans
         public decimal RateOfInterestPerDay { get; set; }//is calculated based on percents and period
         /// <summary>
         /// Кол-во процентов в первоначальном виде (в день/неделю/месяц)
+        /// Хранится в виде процентов, т.е. уже делённое на 100
         /// </summary>
         public decimal InitialInterestRate { get; set; }//TODO may be required to change to private
         /// <summary>
         /// Единицы измерения первичного вида процентов
         /// </summary>
         public PeriodInDays InitialInterestPeriod { get; set; }//TODO may be required to change to private
-        public TimeSpan? IntervalOfPlannedPayments { get; set; }
+        public PeriodInDays? IntervalOfPlannedPayments { get; set; }
         public DateTimeOffset StartDate { get; set; }
         public DateTimeOffset EndDate { get; set; }
         public List<Payments> RealPayments { get; set; }
         public List<decimal> SumsOfPayments = new List<decimal>();
         public List<DateTimeOffset> DatesOfPayments = new List<DateTimeOffset>();
 
+        /// <summary>
+        /// Initialize association of column title and its handler. So data of each column is correctly stored as initial data and processed
+        /// </summary>
         static Loan()
         {
             //important jjj
@@ -48,9 +54,11 @@ namespace Loans
 
 
             //Добавляем обработчики константных строк
+            Loan.AddHandler("№", new RowIndexHandler());
             Loan.AddHandler("договор займа", new LoanContractHandler());
             Loan.AddHandler("фио должника", new FIOHandler());
             Loan.AddHandler("сумма займа", new LoanSumHandler());
+            //store percents as decimal ( divided by 100)
             Loan.AddHandler("процентная ставка", new PercentHandler(100m));
             Loan.AddHandler("период", new InterestPeriodHandler());
             Loan.AddHandler("интервал выплат", new IntervalOfPlannedPaymentsHandler());
@@ -64,25 +72,28 @@ namespace Loans
         /// </summary>
         /// <param name="indexOfLoan">строка в excel файле</param>
         /// <param name="excelData">Данные excel файла</param>
+        /// <exception cref="NoColumnStringHandlerException"></exception>
         public Loan(int indexOfLoan, ExcelData excelData)
         {
             try
             {
                 //Go through each column title
-                for (int currColumn = 0; currColumn < excelData.ColumnTitles.Length; currColumn++)
+                for (int currColumnIndex = 0; currColumnIndex < excelData.ColumnTitles.Length; currColumnIndex++)
                 {
                     //let through empty columns
-                    if (String.IsNullOrEmpty(excelData.ColumnTitles[currColumn]))
+                    if (String.IsNullOrEmpty(excelData.ColumnTitles[currColumnIndex]))
                         continue;
-                    string currColumnTitle = excelData.ColumnTitles[currColumn].Trim().ToLower();
-                    string currColumnValue = excelData.data[indexOfLoan, currColumn];
+                    string currColumnTitle = excelData.ColumnTitles[currColumnIndex].Trim().ToLower();
+                    //Delete redundant spaces in column title
+                    currColumnTitle = string.Join(" ", currColumnTitle.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+                    string currColumnValue = excelData.data[indexOfLoan, currColumnIndex];
 
                     IHandler handler = null;
 
                     //get handler for current column title
                     bool hasHandler = dict.TryGetValue(currColumnTitle, out handler);
                     if (!hasHandler)
-                        throw new Exception("Not found handler for column " + currColumnTitle);
+                        throw new NoColumnStringHandlerException("Not found handler for column " + currColumnTitle);
 
                     if (handler != null)
                     {
@@ -92,7 +103,7 @@ namespace Loans
                 }
                 if (SumsOfPayments.Count != DatesOfPayments.Count)
                 {
-                    throw new Exception("Count of sums of payment is not equal to count of dates of payments");
+                    throw new InitialTableDataIncosistency("Count of sums of payment is not equal to count of dates of payments for loan:" + indexOfLoan);
                 }
                 //important Assumed that date data are correct and each next follows next (dates are strongly increasing)
                 //DatesOfPayments.OrderBy(x => x);

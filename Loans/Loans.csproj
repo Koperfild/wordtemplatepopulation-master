@@ -56,6 +56,10 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="enums.cs" />
+    <Compile Include="Exceptions\IncorrectRowIndexException.cs" />
+    <Compile Include="Exceptions\InitialTableDataIncosistency.cs" />
+    <Compile Include="Exceptions\NoColumnStringHandlerException.cs" />
+    <Compile Include="Exceptions\OverPaymentException.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -76,6 +80,7 @@
     <Compile Include="StringHandlers\LoanSumHandler.cs" />
     <Compile Include="StringHandlers\PercentHandler.cs" />
     <Compile Include="StringHandlers\PeriodHandler.cs" />
+    <Compile Include="StringHandlers\RowIndexHandler.cs" />
     <Compile Include="StringHandlers\StartDateHandler.cs" />
     <Compile Include="StringHandlers\SumsOfPaymentsHandler.cs" />
     <EmbeddedResource Include="Form1.resx">

@@ -21,16 +21,18 @@ namespace Loans.StringHandlers
                 switch (value)
                 {
                     case "день":
-                        context.Period = PeriodInDays.day;
+                        context.IntervalOfPlannedPayments = PeriodInDays.Day;
                         break;
                     case "месяц":
-                        context.Period = PeriodInDays.month;
+                        context.IntervalOfPlannedPayments = PeriodInDays.Month;
                         break;
                     case "год":
-                        context.Period = PeriodInDays.year;
+                        context.IntervalOfPlannedPayments = PeriodInDays.Year;
                         break;
                     default:
+                        context.IntervalOfPlannedPayments = null;
                         throw new Exception("Incorrect period");
+                        break;
                 }
             }
         }
