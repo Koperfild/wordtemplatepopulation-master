@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Collections.Generic;
 
 namespace WordTemplatePopulation
 {
@@ -106,14 +107,15 @@ namespace WordTemplatePopulation
             //Сдвигаем диапазон вниз на 1 строку
             Excel.Range dataRange = usedRange.Offset[1, 0];
             //Убираем получившийся лишним при сдвиге вниз последний ряд
-            dataRange = dataRange.Resize[usedRange.Rows.Count - 1, Type.Missing];
+            dataRange = (Excel.Range)dataRange.Resize[usedRange.Rows.Count - 1, Type.Missing];
 
             //Заполняем таблицу данных данными
             for (int i = 0; i < dataRange.Rows.Count; i++)
             {
                 for (int j = 0; j < dataRange.Columns.Count; j++)
                 {
-                    excelTable.data[i, j] = (Convert.ToString(((Excel.Range)dataRange.Cells[i + 1, j + 1]).Value2)).Trim().ToLower();
+                    object a = ((Excel.Range)dataRange.Cells[i + 1, j + 1]).Value2;
+                    excelTable.data[i, j] = (Convert.ToString(a)).Trim();
                 }
             }
             wrkBook.Close();
@@ -301,7 +303,18 @@ namespace WordTemplatePopulation
                 RegexOptions.IgnoreCase);
         }
     }
+    public class CellPointer
+    {
+        public CellPointer(int m, int n)
+        {
+            this.Row = m;
+            this.Column = n;
+        }
+        public int Row;
+        public int Column;
+    }
 }
+
 
 
 
